@@ -10,14 +10,14 @@ from botocore.exceptions import ClientError
 
 def get_secret() -> dict:
     secret_name = os.environ.get('DRF_PRACTICE_SECRET_NAME')
-    region_name = os.environ.get('AWS_REGION', None)  # For DEV
+    region_name = os.environ.get('AWS_REGION', None)
 
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
         region_name=region_name,
-        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID', None),  # For DEV
-        aws_secret_access_key=os.environ.get('AWS_SECRET_ID', None)  # For DEV
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID', None),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ID', None)
     )
 
     try:
