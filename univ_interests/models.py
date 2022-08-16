@@ -17,6 +17,12 @@ class Country(models.Model):
 
     class Meta:
         db_table = 'country'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['code', 'name'],
+                name='UQ_univ_interests_country_code_name'
+            )
+        ]
 
     code = models.CharField(max_length=2)
     name = models.CharField(max_length=255)
@@ -49,5 +55,3 @@ class UniversityPreference(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)
-
-
