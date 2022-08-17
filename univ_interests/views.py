@@ -22,15 +22,15 @@ class SignUpView(APIView):
 
 
 class SignInView(APIView):
-    def get(self, request):
-        serializer = SignInSerializer(data=request.data)
+    def get(self, **kwargs):
+        serializer = SignInSerializer(data=self.request.data)
 
         if not serializer.is_valid():
             return Response({'detail': serializer.errors},
                             status=HTTP_400_BAD_REQUEST)
         else:
-            email = request.data.get('email')
-            input_password = request.data.get('password')
+            email = self.request.data.get('email')
+            input_password = self.request.data.get('password')
             user = User.objects.get(email=email)
             token = serializer.login(user=user, input_password=input_password)
 
