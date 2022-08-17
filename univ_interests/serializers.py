@@ -2,7 +2,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import serializers
 import jwt
 from datetime import datetime, timedelta
-from .models import User
+from .models import User, University, Country
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -35,3 +35,17 @@ class SignInSerializer(serializers.Serializer):
             return token
         else:
             return False
+
+
+class CountrySearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ['id', 'code']
+
+
+class UniversitySearchSerializer(serializers.ModelSerializer):
+    country = CountrySearchSerializer(read_only=True)
+
+    class Meta:
+        model = University
+        fields = ['name', 'webpage', 'country']
