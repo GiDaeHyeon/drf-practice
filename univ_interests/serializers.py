@@ -1,8 +1,9 @@
+from django.db.utils import IntegrityError
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import serializers
 import jwt
 from datetime import datetime, timedelta
-from .models import User, University, Country
+from .models import User, University, Country, UniversityPreference
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -48,4 +49,48 @@ class UniversitySearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = University
-        fields = ['name', 'webpage', 'country']
+        fields = ['id', 'name', 'webpage', 'country']
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id']
+
+
+class UniversitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = University
+        fields = ['id', 'name']
+
+
+class UniversityPreferenceSerializer(serializers.ModelSerializer):
+    user = UserSerializer
+    university = UniversitySerializer
+
+    class Meta:
+        model = UniversityPreference
+        fields = ['university']
+
+    def create(self, user):
+        university = self.validated_data.get('university')
+
+        try:
+            preference = UniversityPreference(user=user, university=university)
+            preference.save()
+        except IntegrityError:
+            return False
+
+        return {'user': user.id, 'university': university.name}
+
+    def update(self, user):
+        university = self.validated_data.get('university')
+
+        try:
+            target_instance = UniversityPreference.objects.get(user=user, university=university, deleted_at__isnull=True)
+        except UniversityPreference.DoesNotExist:
+            return False
+
+        target_instance.deleted_at = datetime.now()
+        target_instance.save()
+        return True

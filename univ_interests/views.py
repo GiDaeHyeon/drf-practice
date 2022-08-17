@@ -1,17 +1,17 @@
 import ast
 
-from .serializers import SignUpSerializer, SignInSerializer, UniversitySearchSerializer
-from rest_framework.status import (HTTP_400_BAD_REQUEST, HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN)
+from .serializers import SignUpSerializer, SignInSerializer, UniversitySearchSerializer, UniversityPreferenceSerializer
+from rest_framework.status import (HTTP_400_BAD_REQUEST, HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_406_NOT_ACCEPTABLE)
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from .models import User, University
+from .models import User, University, UniversityPreference
 from .utils.auth import login_required
 
 
 class SignUpView(APIView):
-    def post(self, request):
+    def put(self, request, **kwargs):
         serializer = SignUpSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -22,7 +22,7 @@ class SignUpView(APIView):
 
 
 class SignInView(APIView):
-    def post(self, request):
+    def get(self, request):
         serializer = SignInSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -64,3 +64,43 @@ class UniversitySearchView(ListAPIView):
 
         queryset = University.objects.filter(**query_param).order_by('id')
         return queryset
+
+
+class UniversityPreferenceCreateView(APIView):
+    @login_required
+    def put(self, request, **kwargs):
+        user_id = kwargs.get('user').get('user_id')
+        user = User.objects.get(id=user_id)
+        serializer = UniversityPreferenceSerializer(data=request.data)
+
+        if serializer.is_valid():
+            preference_list = UniversityPreference.objects.filter(user=user)
+
+            if len(preference_list) >= 20:
+                return Response({'detail': '선호대학은 20개를 초과할 수 없습니다.'},
+                                status=HTTP_406_NOT_ACCEPTABLE)
+
+            preference = serializer.create(user=user)
+
+            if preference:
+                return Response(preference, status=HTTP_201_CREATED)
+            else:
+                return Response({"detail": "Integrity Error"}, status=HTTP_406_NOT_ACCEPTABLE)
+
+        else:
+            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+
+class UniversityPreferenceDeleteView(APIView):
+    @login_required
+    def delete(self, request, **kwargs):
+        user_id = kwargs.get('user').get('user_id')
+        user = User.objects.get(id=user_id)
+        serializer = UniversityPreferenceSerializer(data=request.data)
+
+        if serializer.is_valid():
+            is_updated = serializer.update(user=user)
+            if is_updated:
+                return Response({'detail': 'success'}, status=HTTP_200_OK)
+            else:
+                return Response({'detail': 'Not Exist'}, status=HTTP_400_BAD_REQUEST)
