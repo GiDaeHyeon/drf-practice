@@ -30,7 +30,17 @@ class SignUpSerializer(serializers.ModelSerializer):
 class SignInSerializer(serializers.Serializer):
     class Meta:
         model = User
-        fields = ['email']
+        fields = ['email', 'password']
+
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        if 'email' not in data:
+            raise serializers.ValidationError('email 필드는 필수 항목입니다.')
+        if 'password' not in data:
+            raise serializers.ValidationError('password 필드는 필수 항목입니다.')
+        return data
 
     def login(self, user, input_password):
         if check_password(input_password, user.password):
