@@ -6,7 +6,7 @@ class User(models.Model):
     class Meta:
         db_table = 'user'
 
-    email = models.CharField(unique=True, max_length=50)
+    email = models.EmailField(unique=True, max_length=50)
     password = models.CharField(max_length=200)
     nickname = models.CharField(unique=True, max_length=10)
     is_active = models.BooleanField(default=True)
