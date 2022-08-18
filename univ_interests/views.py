@@ -1,11 +1,23 @@
 import ast
 
-from .serializers import SignUpSerializer, SignInSerializer, UniversitySearchSerializer, UniversityPreferenceSerializer
-from rest_framework.status import (HTTP_400_BAD_REQUEST, HTTP_200_OK, HTTP_201_CREATED, HTTP_403_FORBIDDEN, HTTP_406_NOT_ACCEPTABLE)
+from rest_framework.status import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_200_OK,
+    HTTP_201_CREATED,
+    HTTP_403_FORBIDDEN,
+    HTTP_406_NOT_ACCEPTABLE
+)
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+
+from .serializers import (
+    SignUpSerializer,
+    SignInSerializer,
+    UniversitySearchSerializer,
+    UniversityPreferenceSerializer
+)
 from .models import User, University, UniversityPreference
 from .utils.auth import login_required
 
@@ -22,23 +34,29 @@ class SignUpView(APIView):
 
 
 class SignInView(APIView):
-    def get(self, **kwargs):
-        serializer = SignInSerializer(data=self.request.data)
+    def get(self, request, **kwargs):
+        serializer = SignInSerializer(data=request.data)
 
         if not serializer.is_valid():
             return Response({'detail': serializer.errors},
                             status=HTTP_400_BAD_REQUEST)
         else:
-            email = self.request.data.get('email')
-            input_password = self.request.data.get('password')
-            user = User.objects.get(email=email)
+            email = request.data.get('email')
+            input_password = request.data.get('password')
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
+                                status=HTTP_403_FORBIDDEN)
+
             token = serializer.login(user=user, input_password=input_password)
 
             if token:
                 return Response({'detail': 'success', 'token': token},
                                 status=HTTP_200_OK, headers={'Authorization': token})
             else:
-                return Response({'detail': '아이디와 비밀번호를 확인해주세요'},
+                return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
                                 status=HTTP_403_FORBIDDEN)
 
 
@@ -104,3 +122,25 @@ class UniversityPreferenceDeleteView(APIView):
                 return Response({'detail': 'success'}, status=HTTP_200_OK)
             else:
                 return Response({'detail': 'Not Exist'}, status=HTTP_400_BAD_REQUEST)
+
+
+class UniversityRankingView(APIView):
+    @login_required
+    def get(self, request, **kwargs):
+        query = """
+            SELECT
+              u.name AS name,
+              u.id AS id,
+              COUNT(DISTINCT u.country_id) + COUNT(up.university_id) AS score
+            FROM
+              university_preference AS up
+              JOIN university AS u ON u.id = up.university_id
+            GROUP BY
+              u.name, u.id
+            ORDER BY
+              3 DESC, 2 ASC
+            LIMIT 10;
+        """
+        queryset = UniversityPreference.objects.raw(query)
+        results = [{'id': q.id, 'name': q.name, 'score': q.score} for q in queryset]
+        return Response({'detail': 'success', 'results': results}, status=HTTP_200_OK)
