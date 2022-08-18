@@ -4,7 +4,8 @@ from .views import (
     SignInView,
     UniversitySearchView,
     UniversityPreferenceDeleteView,
-    UniversityPreferenceCreateView
+    UniversityPreferenceCreateView,
+    UniversityRankingView
 )
 
 
@@ -15,4 +16,5 @@ urlpatterns = [
     path('search/', UniversitySearchView.as_view(), name='search'),
     path('preference/delete/', UniversityPreferenceDeleteView.as_view(), name='prefer-delete'),
     path('preference/create/', UniversityPreferenceCreateView.as_view(), name='prefer-delete'),
+    path('ranking/', UniversityRankingView.as_view(), name='ranking')
 ]
