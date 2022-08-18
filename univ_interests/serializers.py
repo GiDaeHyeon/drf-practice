@@ -92,7 +92,14 @@ class UniversityPreferenceSerializer(serializers.ModelSerializer):
             preference = UniversityPreference(user=user, university=university)
             preference.save()
         except IntegrityError:
-            return False
+            existed_data = UniversityPreference.objects.get(user=user, university=university)
+
+            # 삭제된 이력이 있는 경우
+            if existed_data.deleted_at is None:
+                return False
+            else:
+                existed_data.deleted_at = None
+                existed_data.save()
 
         return {'user': user.id, 'university': university.name}
 

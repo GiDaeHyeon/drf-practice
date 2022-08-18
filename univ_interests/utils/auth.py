@@ -13,11 +13,11 @@ def login_required(func):
         request = self.request
         access_token = request.headers.get('Authorization', None)
         if access_token is None:
-            return Response({'detail': 'Invalid Token'}, status=HTTP_401_UNAUTHORIZED)
+            return Response({'detail': 'InvalidToken'}, status=HTTP_401_UNAUTHORIZED)
         else:
             try:
                 payload = jwt.decode(access_token, SECRET_KEY, 'HS256')
             except jwt.InvalidTokenError:
-                return Response({'detail': 'Invalid Token'}, status=HTTP_401_UNAUTHORIZED)
+                return Response({'detail': 'InvalidToken'}, status=HTTP_401_UNAUTHORIZED)
         return func(self, *args, **kwargs, user=payload)
     return decorated

@@ -28,7 +28,8 @@ class SignUpView(APIView):
             user = serializer.create(validated_data=serializer.validated_data)
             return Response({'detail': 'success', 'user_data': user}, status=HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'InvalidInput', 'error': serializer.errors},
+                            status=HTTP_400_BAD_REQUEST)
 
 
 class SignInView(APIView):
@@ -36,38 +37,39 @@ class SignInView(APIView):
         serializer = SignInSerializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response({'detail': serializer.errors},
+            return Response({'detail': 'InvalidInput', 'error': serializer.errors},
                             status=HTTP_400_BAD_REQUEST)
         else:
             email = request.data.get('email')
             input_password = request.data.get('password')
 
+            # 입력된 email이 테이블에 유효하게 존재하는지 체크합니다.
             try:
-                user = User.objects.get(email=email)
+                user = User.objects.get(email=email, is_active=True)
             except User.DoesNotExist:
-                return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
+                return Response({'detail': 'InvalidAuthenticationInfo', 'error': '아이디와 비밀번호를 확인해주세요.'},
                                 status=HTTP_400_BAD_REQUEST)
 
+            # 입력된 password가 유효한지 체크합니다.
             token = serializer.login(user=user, input_password=input_password)
 
             if token:
                 return Response({'detail': 'success', 'token': token},
                                 status=HTTP_200_OK, headers={'Authorization': token})
             else:
-                return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
+                return Response({'detail': 'InvalidAuthenticationInfo', 'error': '아이디와 비밀번호를 확인해주세요.'},
                                 status=HTTP_400_BAD_REQUEST)
 
 
+class UniversityPagination(PageNumberPagination):
+    page_size_query_param = 'page_size'
+    page_query_param = 'page'
+
+
 class UniversitySearchView(ListAPIView):
-
-    class UniversityPagination(PageNumberPagination):
-        page_size_query_param = 'page_size'
-        page_query_param = 'page'
-
     serializer_class = UniversitySearchSerializer
     pagination_class = UniversityPagination
 
-    @login_required
     def get_queryset(self, **kwargs):
         univ_name = self.request.query_params.get('name', None)
         country_code = self.request.query_params.get('country_code', None)
@@ -81,6 +83,10 @@ class UniversitySearchView(ListAPIView):
         queryset = University.objects.filter(**query_param).order_by('id')
         return queryset
 
+    @login_required
+    def get(self, request, **kwargs):
+        return self.list(request, **kwargs)
+
 
 class UniversityPreferenceCreateView(APIView):
     @login_required
@@ -90,19 +96,18 @@ class UniversityPreferenceCreateView(APIView):
         serializer = UniversityPreferenceSerializer(data=request.data)
 
         if serializer.is_valid():
-            preference_list = UniversityPreference.objects.filter(user=user)
+            preference_list = UniversityPreference.objects.filter(user=user, deleted_at__isnull=False)
 
             if len(preference_list) >= 20:
-                return Response({'detail': '선호대학은 20개를 초과할 수 없습니다.'},
+                return Response({'detail': 'InvalidInput'},
                                 status=HTTP_400_BAD_REQUEST)
 
             preference = serializer.create(user=user)
 
             if preference:
-                return Response(preference, status=HTTP_201_CREATED)
+                return Response({'detail': 'success', 'result': preference}, status=HTTP_201_CREATED)
             else:
-                return Response({"detail": "Integrity Error"}, status=HTTP_400_BAD_REQUEST)
-
+                return Response({"detail": "IntegrityError"}, status=HTTP_400_BAD_REQUEST)
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
@@ -119,7 +124,7 @@ class UniversityPreferenceDeleteView(APIView):
             if is_updated:
                 return Response({'detail': 'success'}, status=HTTP_200_OK)
             else:
-                return Response({'detail': 'Not Exist'}, status=HTTP_400_BAD_REQUEST)
+                return Response({'detail': 'NotExist'}, status=HTTP_400_BAD_REQUEST)
 
 
 class UniversityRankingView(APIView):
@@ -129,7 +134,7 @@ class UniversityRankingView(APIView):
             SELECT
               u.name AS name,
               u.id AS id,
-              COUNT(DISTINCT u.country_id) + COUNT(up.university_id) AS score
+              COUNT(DISTINCT up.country_id) + COUNT(up.university_id) AS score
             FROM
               university_preference AS up
               JOIN university AS u ON u.id = up.university_id
