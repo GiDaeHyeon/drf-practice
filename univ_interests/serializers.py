@@ -1,8 +1,11 @@
+from datetime import datetime, timedelta
+
+import jwt
 from django.db.utils import IntegrityError
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework import serializers
-import jwt
-from datetime import datetime, timedelta
+
+from DRFPractice.settings import SECRET_KEY
 from .models import User, University, Country, UniversityPreference
 
 
@@ -32,7 +35,7 @@ class SignInSerializer(serializers.Serializer):
     def login(self, user, input_password):
         if check_password(input_password, user.password):
             payload = {'user_id': user.id, 'exp': datetime.now() + timedelta(seconds=60 * 60)}
-            token = jwt.encode(payload, 'SECRET', 'HS256')
+            token = jwt.encode(payload, SECRET_KEY, 'HS256')
             return token
         else:
             return False
@@ -87,7 +90,8 @@ class UniversityPreferenceSerializer(serializers.ModelSerializer):
         university = self.validated_data.get('university')
 
         try:
-            target_instance = UniversityPreference.objects.get(user=user, university=university, deleted_at__isnull=True)
+            target_instance = UniversityPreference.objects.get(user=user, university=university,
+                                                               deleted_at__isnull=True)
         except UniversityPreference.DoesNotExist:
             return False
 

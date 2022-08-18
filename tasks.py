@@ -1,5 +1,6 @@
 import os
 import random
+
 import django
 import requests
 
@@ -95,7 +96,7 @@ def create_university_preference_data():
 
 if __name__ == '__main__':
     collector = CollectData()
-    a = collector.collect_country_data()
-    b = collector.collect_university_data()
+    collector.collect_country_data()
+    collector.collect_university_data()
     create_user_dummy_data()
     create_university_preference_data()

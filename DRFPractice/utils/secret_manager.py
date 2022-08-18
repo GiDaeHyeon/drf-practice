@@ -4,11 +4,19 @@
 
 import os
 import json
+
 import boto3
 from botocore.exceptions import ClientError
 
 
 def get_secret() -> dict:
+    """
+    AWS Secret Manager에서 Secret을 가져와 딕셔너리로 리턴합니다.
+    로컬에서 개발을 진행할 때에는 AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ID가 환경변수로 설정되어있어야 합니다.
+
+    :return:
+    secret_key_values (dict) AWS Secret Manager에 등록된 secrets
+    """
     secret_name = os.environ.get('DRF_PRACTICE_SECRET_NAME')
     region_name = os.environ.get('AWS_REGION', None)
 

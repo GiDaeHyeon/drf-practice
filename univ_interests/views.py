@@ -3,9 +3,7 @@ import ast
 from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_403_FORBIDDEN,
-    HTTP_406_NOT_ACCEPTABLE
+    HTTP_201_CREATED
 )
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
@@ -48,7 +46,7 @@ class SignInView(APIView):
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
                 return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
-                                status=HTTP_403_FORBIDDEN)
+                                status=HTTP_400_BAD_REQUEST)
 
             token = serializer.login(user=user, input_password=input_password)
 
@@ -57,15 +55,15 @@ class SignInView(APIView):
                                 status=HTTP_200_OK, headers={'Authorization': token})
             else:
                 return Response({'detail': '아이디와 비밀번호를 확인해주세요.'},
-                                status=HTTP_403_FORBIDDEN)
-
-
-class UniversityPagination(PageNumberPagination):
-    page_size_query_param = 'page_size'
-    page_query_param = 'page'
+                                status=HTTP_400_BAD_REQUEST)
 
 
 class UniversitySearchView(ListAPIView):
+
+    class UniversityPagination(PageNumberPagination):
+        page_size_query_param = 'page_size'
+        page_query_param = 'page'
+
     serializer_class = UniversitySearchSerializer
     pagination_class = UniversityPagination
 
@@ -96,14 +94,14 @@ class UniversityPreferenceCreateView(APIView):
 
             if len(preference_list) >= 20:
                 return Response({'detail': '선호대학은 20개를 초과할 수 없습니다.'},
-                                status=HTTP_406_NOT_ACCEPTABLE)
+                                status=HTTP_400_BAD_REQUEST)
 
             preference = serializer.create(user=user)
 
             if preference:
                 return Response(preference, status=HTTP_201_CREATED)
             else:
-                return Response({"detail": "Integrity Error"}, status=HTTP_406_NOT_ACCEPTABLE)
+                return Response({"detail": "Integrity Error"}, status=HTTP_400_BAD_REQUEST)
 
         else:
             return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)

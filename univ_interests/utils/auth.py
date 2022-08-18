@@ -1,9 +1,10 @@
 from functools import wraps
 
 import jwt
-
 from rest_framework.response import Response
 from rest_framework.status import HTTP_401_UNAUTHORIZED
+
+from DRFPractice.settings import SECRET_KEY
 
 
 def login_required(func):
@@ -15,7 +16,7 @@ def login_required(func):
             return Response({'detail': 'Invalid Token'}, status=HTTP_401_UNAUTHORIZED)
         else:
             try:
-                payload = jwt.decode(access_token, 'SECRET', 'HS256')
+                payload = jwt.decode(access_token, SECRET_KEY, 'HS256')
             except jwt.InvalidTokenError:
                 return Response({'detail': 'Invalid Token'}, status=HTTP_401_UNAUTHORIZED)
         return func(self, *args, **kwargs, user=payload)
